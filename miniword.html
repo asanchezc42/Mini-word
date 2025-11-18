@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sweet Writer – Mini Word</title>
+<style>
+    :root{
+        --rose:#e91e63;
+        --violet:#ba68c8;
+        --sky:#4fc3f7;
+        --sun:#ffca28;
+        --caramel:#8d6e63;
+    }
+    body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(120deg,#fff0f6 0%, #f3ecff 100%);
+        font-family: 'Poppins', system-ui, Arial, sans-serif;
+    }
+
+    .header {
+        background: rgba(255,255,255,0.6);
+        padding: 14px 18px;
+        text-align: center;
+        font-size: 24px;
+        color: #8b0057;
+        font-weight: 700;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .workspace {
+        width: 92%;
+        max-width: 1100px;
+        margin: 22px auto;
+        display: grid;
+        grid-template-columns: 1.4fr 0.9fr;
+        gap: 18px;
+        align-items: start;
+    }
+
+    .panel {
+        background: rgba(255,255,255,0.95);
+        padding: 18px;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(60,0,60,0.06);
+    }
+
+    .panel h2 { margin: 0 0 10px 0; color: #6b0060; }
+
+    #texto {
+        width: 100%;
+        height: 240px;
+        border-radius: 10px;
+        border: 1px solid #f2dbe6;
+        padding: 12px;
+        resize: vertical;
+        font-size: 15px;
+        outline: none;
+        background: #fff;
+        color: #333;
+    }
+
+    .toolbar {
+        display:flex;
+        gap:8px;
+        margin-top:12px;
+        flex-wrap:wrap;
+    }
+
+    .tool-btn{
+        background:var(--violet);
+        border:none;
+        color:white;
+        padding:8px 10px;
+        border-radius:8px;
+        font-weight:600;
+        cursor:pointer;
+        font-size:13px;
+    }
+
+    .tool-btn.rose{background:var(--rose)}
+    .tool-btn.sky{background:var(--sky); color:#044}
+    .tool-btn.sun{background:var(--sun); color:#222}
+    .tool-btn.caramel{background:var(--caramel)}
+
+    .controls-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+
+    #resultado {
+        min-height:240px;
+        background: linear-gradient(180deg,#fff 0%, #fffaf9 100%);
+        padding:12px;
+        border-radius:10px;
+        border-left:6px solid var(--rose);
+        color:#222;
+        font-size:14px;
+        overflow:auto;
+    }
+
+    label{ font-size:12px; color:#5a2a4a; display:block; margin-bottom:6px }
+    .small{ font-size:13px }
+
+    .muted{ color:#666; font-size:13px }
+
+    .row{ display:flex; gap:8px; }
+
+    input[type=color], input[type=number], select{ padding:6px; border-radius:8px; border:1px solid #eee }
+
+    footer{ text-align:center; color:#7a456b; margin:20px 0; }
+
+    @media(max-width:900px){ .workspace{ grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">✨ Sweet Writer – Mini Word ✨</div>
+
+<div class="workspace">
+
+    <div class="panel">
+        <h2>📝 Área de escritura</h2>
+
+        <div style="margin-bottom:8px">
+            <label class="small">Herramientas</label>
+            <div class="toolbar">
+                <button class="tool-btn rose" id="btnBold">B</button>
+                <button class="tool-btn" id="btnItalic">I</button>
+                <button class="tool-btn" id="btnUnderline">U</button>
+
+                <div style="width:8px"></div>
+
+                <button class="tool-btn sky" id="btnSizeUp">A+</button>
+                <button class="tool-btn sky" id="btnSizeDown">A-</button>
+
+                <input type="color" id="colorPicker" title="Color de texto" style="padding:6px; border-radius:8px; border:1px solid #eee" />
+            </div>
+        </div>
+
+        <textarea id="texto" placeholder="Escribe tu cuento, tarea o ideas aquí..."></textarea>
+
+        <div class="controls-grid">
+            <button class="tool-btn rose" id="analizarBtn">Analizar</button>
+            <button class="tool-btn caramel" id="buscarBtn">Buscar palabra</button>
+            <button class="tool-btn sky" id="contarCharBtn">Contar carácter</button>
+            <button class="tool-btn sun" id="addInicioBtn">Añadir al inicio</button>
+            <button class="tool-btn" id="addFinalBtn">Añadir al final</button>
+        </div>
+
+        <div style="margin-top:12px;" class="muted">Nota: este editor usa <strong>textarea</strong>, por eso los estilos como <em>negrita</em> se insertan como marcadores (por ejemplo **texto**). Para formato visual real usaríamos un editor compuesto con contenteditable.</div>
+    </div>
+
+    <div class="panel">
+        <h2>📌 Resultados y opciones</h2>
+
+        <div id="resultado">Resultados aparecerán aquí después de analizar.</div>
+
+        <div style="margin-top:12px">
+            <label class="small">Exportar</label>
+            <div class="row">
+                <button class="tool-btn" id="copyBtn">Copiar resultado</button>
+                <button class="tool-btn" id="exportTxtBtn">Descargar .txt</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<footer>Made with 💖 for your homework</footer>
+
+<script>
+// -------------------------
+// Funciones de análisis (las 15)
+// -------------------------
+function contarPalabras(texto) {
+    let palabras = 0;
+    for (let i = 0; i < texto.length; i++) {
+        if (texto[i] === " " || texto[i] === "
+") {
+            palabras++;
+        }
+    }
+    if (texto.length > 0) palabras++;
+    return palabras;
+}
+
+function contarSignos(texto) {
+    let signos = 0;
+    const lista = ['.', ',', ';', ':', '!', '?', '¿', '¡', '"'];
+    for (let i = 0; i < texto.length; i++) {
+        for (let j = 0; j < lista.length; j++) {
+            if (texto[i] === lista[j]) signos++;
+        }
+    }
+    return signos;
+}
+
+function contarVocales(texto) {
+    let vocales = 0;
+    const lista = ['a','e','i','o','u','A','E','I','O','U'];
+    for (let i = 0; i < texto.length; i++) {
+        for (let j = 0; j < lista.length; j++) {
+            if (texto[i] === lista[j]) vocales++;
+        }
+    }
+    return vocales;
+}
+
+function contarConsonantes(texto) {
+    let cons = 0;
+    for (let i = 0; i < texto.length; i++) {
+        let c = texto[i];
+        let esLetraMay = (c >= 'A' && c <= 'Z');
+        let esLetraMin = (c >= 'a' && c <= 'z');
+        let esVocal = (c === 'a'||c==='A'||c==='e'||c==='E'||c==='i'||c==='I'||c==='o'||c==='O'||c==='u'||c==='U');
+        if ((esLetraMay || esLetraMin) && !esVocal) cons++;
+    }
+    return cons;
+}
+
+function contarDigitos(texto) {
+    let digitos = 0;
+    for (let i = 0; i < texto.length; i++) {
+        if (texto[i] >= '0' && texto[i] <= '9') digitos++;
+    }
+    return digitos;
+}
+
+function palabrasMayuscula(texto) {
+    let contador = 0;
+    for (let i = 0; i < texto.length; i++) {
+        if (i === 0 || texto[i-1] === ' ' || texto[i-1] === '
+') {
+            if (texto[i] >= 'A' && texto[i] <= 'Z') contador++;
+        }
+    }
+    return contador;
+}
+
+function palabrasMinuscula(texto) {
+    let contador = 0;
+    for (let i = 0; i < texto.length; i++) {
+        if (i === 0 || texto[i-1] === ' ' || texto[i-1] === '
+') {
+            if (texto[i] >= 'a' && texto[i] <= 'z') contador++;
+        }
+    }
+    return contador;
+}
+
+function contarParrafos(texto) {
+    if (texto.length === 0) return 0;
+    let parrafos = 1;
+    for (let i = 0; i < texto.length; i++) if (texto[i] === '
+') parrafos++;
+    return parrafos;
+}
+
+function invertirTexto(texto) {
+    let invertido = "";
+    for (let i = texto.length - 1; i >= 0; i--) invertido += texto[i];
+    return invertido;
+}
+
+function totalCaracteres(texto) {
+    return texto.length;
+}
+
+function buscarPalabra(texto, buscar) {
+    if (buscar.length === 0) return false;
+    let palabra = "";
+    for (let i = 0; i < texto.length; i++) {
+        if (texto[i] === ' ' || texto[i] === '
+') {
+            if (palabra === buscar) return true;
+            palabra = "";
+        } else {
+            palabra += texto[i];
+        }
+    }
+    if (palabra === buscar) return true;
+    return false;
+}
+
+function contarCaracter(texto, char) {
+    if (char.length === 0) return 0;
+    let contador = 0;
+    for (let i = 0; i < texto.length; i++) if (texto[i] === char) contador++;
+    return contador;
+}
+
+function contarPares(texto) {
+    let pares = 0;
+    for (let i = 0; i < texto.length; i++) if (i % 2 === 0) pares++;
+    return pares;
+}
+
+function contarImpares(texto) {
+    let impares = 0;
+    for (let i = 0; i < texto.length; i++) if (i % 2 === 1) impares++;
+    return impares;
+}
+
+function agregarTexto(texto, fragmento) {
+    let alInicio = fragmento + " " + texto;
+    let alFinal = texto + " " + fragmento;
+    return { inicio: alInicio, final: alFinal };
+}
+
+// -------------------------
+// Utilidades para UI
+// -------------------------
+const $ = id => document.getElementById(id);
+
+function mostrarResultado(html) {
+    const box = $('resultado');
+    box.innerHTML = html;
+}
+
+function analizar(){
+    const texto = $('texto').value;
+    const res = [];
+    res.push(`<strong>Palabras:</strong> ${contarPalabras(texto)}`);
+    res.push(`<strong>Signos de puntuación:</strong> ${contarSignos(texto)}`);
+    res.push(`<strong>Vocales:</strong> ${contarVocales(texto)}`);
+    res.push(`<strong>Consonantes:</strong> ${contarConsonantes(texto)}`);
+    res.push(`<strong>Dígitos:</strong> ${contarDigitos(texto)}`);
+    res.push(`<strong>Palabras con mayúscula inicial:</strong> ${palabrasMayuscula(texto)}`);
+    res.push(`<strong>Palabras con minúscula inicial:</strong> ${palabrasMinuscula(texto)}`);
+    res.push(`<strong>Párrafos:</strong> ${contarParrafos(texto)}`);
+    res.push(`<strong>Texto invertido:</strong> <span style="word-break:break-word">${invertirTexto(texto)}</span>`);
+    res.push(`<strong>Total de caracteres:</strong> ${totalCaracteres(texto)}`);
+    res.push(`<strong>Caracteres en posiciones pares:</strong> ${contarPares(texto)}`);
+    res.push(`<strong>Caracteres en posiciones impares:</strong> ${contarImpares(texto)}`);
+
+    mostrarResultado(res.join('<br>'));
+}
+
+function pedirYBuscar(){
+    const texto = $('texto').value;
+    const palabra = prompt('Escribe la palabra a buscar:');
+    if (palabra === null) return; // cancel
+    const existe = buscarPalabra(texto, palabra);
+    mostrarResultado(`La palabra '<strong>${escapeHtml(palabra)}</strong>' ${existe ? "sí" : "no"} se encuentra en el texto.`);
+}
+
+function pedirYContarChar(){
+    const texto = $('texto').value;
+    let ch = prompt('Escribe el carácter a contar (exacto):');
+    if (ch === null) return;
+    if (ch.length !== 1){ alert('Ingresa exactamente UN carácter.'); return; }
+    const n = contarCaracter(texto, ch);
+    mostrarResultado(`El carácter '<strong>${escapeHtml(ch)}</strong>' aparece <strong>${n}</strong> veces.`);
+}
+
+function pedirYAgregarInicio(){
+    const frag = prompt('Texto para añadir al inicio:');
+    if (frag === null) return;
+    const t = $('texto').value;
+    const out = agregarTexto(t, frag).inicio;
+    $('texto').value = out;
+    mostrarResultado(`Se añadió al inicio. Nuevo texto actualizado en el área de escritura.`);
+}
+
+function pedirYAgregarFinal(){
+    const frag = prompt('Texto para añadir al final:');
+    if (frag === null) return;
+    const t = $('texto').value;
+    const out = agregarTexto(t, frag).final;
+    $('texto').value = out;
+    mostrarResultado(`Se añadió al final. Nuevo texto actualizado en el área de escritura.`);
+}
+
+function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// -------------------------
+// Funciones de formato (para textarea insertamos marcadores)
+// -------------------------
+function wrapSelection(markerStart, markerEnd){
+    const ta = $('texto');
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const before = ta.value.slice(0,start);
+    const selected = ta.value.slice(start,end);
+    const after = ta.value.slice(end);
+    ta.value = before + markerStart + selected + markerEnd + after;
+    // mantener selección sobre el texto marcado
+    ta.selectionStart = start + markerStart.length;
+    ta.selectionEnd = start + markerStart.length + selected.length;
+    ta.focus();
+}
+
+// botones formato
+$('btnBold').addEventListener('click', ()=> wrapSelection('**','**'));
+$('btnItalic').addEventListener('click', ()=> wrapSelection('*','*'));
+$('btnUnderline').addEventListener('click', ()=> wrapSelection('__','__'));
+
+// tamaño
+let currentSize = 15;
+$('btnSizeUp').addEventListener('click', ()=>{ currentSize+=2; $('texto').style.fontSize = currentSize + 'px'; });
+$('btnSizeDown').addEventListener('click', ()=>{ currentSize = Math.max(10,currentSize-2); $('texto').style.fontSize = currentSize + 'px'; });
+
+// color
+$('colorPicker').addEventListener('input', (e)=>{ $('texto').style.color = e.target.value; });
+
+// -------------------------
+// Conectar botones principales
+// -------------------------
+$('analizarBtn').addEventListener('click', analizar);
+$('buscarBtn').addEventListener('click', pedirYBuscar);
+$('contarCharBtn').addEventListener('click', pedirYContarChar);
+$('addInicioBtn').addEventListener('click', pedirYAgregarInicio);
+$('addFinalBtn').addEventListener('click', pedirYAgregarFinal);
+
+// copiar resultado
+$('copyBtn').addEventListener('click', ()=>{
+    const r = $('resultado').innerText;
+    navigator.clipboard.writeText(r).then(()=> alert('Resultado copiado al portapapeles.'));
+});
+
+// descargar txt
+$('exportTxtBtn').addEventListener('click', ()=>{
+    const text = $('resultado').innerText;
+    const blob = new Blob([text], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'resultado.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+});
+
+// -------------------------
+// helpers para prompts y seguridad
+// -------------------------
+// evitar que enter en textarea dispare nada
+$('texto').addEventListener('keydown', (e)=>{
+    // Ctrl+B Ctrl+I shortcuts
+    if (e.ctrlKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); wrapSelection('**','**'); }
+    if (e.ctrlKey && e.key.toLowerCase() === 'i'){ e.preventDefault(); wrapSelection('*','*'); }
+});
+
+// inicializar tamaño y color
+$('texto').style.fontSize = currentSize + 'px';
+$('texto').style.color = '#222';
+
+</script>
+
+</body>
+</html>
